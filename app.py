@@ -16,7 +16,6 @@ else:
 uploaded_file = st.file_uploader("SRT ဖိုင် တင်ပေးပါ", type=["srt"])
 
 if uploaded_file:
-    # Encoding error မတက်အောင် ignore သုံးထားပါတယ်
     content = uploaded_file.getvalue().decode("utf-8", errors='ignore')
     subs = pysrt.from_string(content)
     st.write(f"စုစုပေါင်း စာကြောင်းရေ: {len(subs)}")
@@ -44,7 +43,7 @@ if uploaded_file:
                 
                 time.sleep(1) 
                 
-            except Exception as e:
+            except Exception:
                 time.sleep(5) 
             
             progress = min((i + batch_size) / len(subs), 1.0)
@@ -53,13 +52,16 @@ if uploaded_file:
 
         st.success("ဘာသာပြန်ပြီးပါပြီ!")
         
-        # ERROR ပြင်ဆင်ချက်- SRT ကို စာသားအဖြစ် ပြောင်းလဲခြင်း
-        translated_srt_data = subs.to_string()
+        # --- ပြင်ဆင်ချက်- စိတ်ချရဆုံး နည်းလမ်းဖြင့် SRT စာသားပြန်ထုတ်ခြင်း ---
+        # pysrt object ကို manual loop ပတ်ပြီး string ပြန်ဖွဲ့တာက အသေချာဆုံးပါ
+        final_srt = ""
+        for s in subs:
+            final_srt += f"{s.index}\n{s.start} --> {s.end}\n{s.text}\n\n"
         
         st.download_button(
             label="Download Translated SRT",
-            data=translated_srt_data,
+            data=final_srt,
             file_name="translated_myanmar.srt",
             mime="text/plain"
         )
-        
+
