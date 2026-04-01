@@ -25,23 +25,32 @@ if uploaded_file:
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        batch_size = 15
+        # Batch size ကို ၁၀ ကြောင်းပဲ ထားပါမယ် (ပိုသေချာအောင်)
+        batch_size = 10
         for i in range(0, len(subs), batch_size):
             batch = subs[i:i + batch_size]
-            original_texts = "\n".join([f"{j+1}. {s.text}" for j, s in enumerate(batch)])
+            original_texts = ""
+            for j, s in enumerate(batch):
+                original_texts += f"Line {j+1}: {s.text}\n"
             
-            prompt = f"Translate these movie subtitles to natural Burmese. Keep the numbering and return ONLY the translated text:\n{original_texts}"
+            # AI ကို ခိုင်းတဲ့ စာသားကို ပိုမိုတိကျအောင် ပြင်ဆင်ထားပါတယ်
+            prompt = f"""You are a professional movie translator. 
+            Translate the following English subtitle lines into natural Burmese.
+            Provide ONLY the Burmese translation, line by line.
+            Do not include the English text or 'Line X:' prefix.
+            
+            Subtitles to translate:
+            {original_texts}"""
             
             try:
                 response = model.generate_content(prompt)
-                translated_lines = response.text.strip().split('\n')
+                translated_lines = [line.strip() for line in response.text.strip().split('\n') if line.strip()]
                 
-                for j, line in enumerate(translated_lines):
+                for j, translated_text in enumerate(translated_lines):
                     if j < len(batch):
-                        clean_text = line.split('. ', 1)[-1] if '. ' in line else line
-                        batch[j].text = clean_text
+                        batch[j].text = translated_text
                 
-                time.sleep(1) 
+                time.sleep(1) # API Limit မမိအောင်
                 
             except Exception:
                 time.sleep(5) 
@@ -52,8 +61,7 @@ if uploaded_file:
 
         st.success("ဘာသာပြန်ပြီးပါပြီ!")
         
-        # --- ပြင်ဆင်ချက်- စိတ်ချရဆုံး နည်းလမ်းဖြင့် SRT စာသားပြန်ထုတ်ခြင်း ---
-        # pysrt object ကို manual loop ပတ်ပြီး string ပြန်ဖွဲ့တာက အသေချာဆုံးပါ
+        # SRT Format အမှန်အတိုင်း ပြန်ဖွဲ့ခြင်း
         final_srt = ""
         for s in subs:
             final_srt += f"{s.index}\n{s.start} --> {s.end}\n{s.text}\n\n"
@@ -64,4 +72,4 @@ if uploaded_file:
             file_name="translated_myanmar.srt",
             mime="text/plain"
         )
-
+            
