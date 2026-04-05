@@ -6,17 +6,17 @@ import time
 st.set_page_config(page_title="Burmese Subtitle Pro", layout="centered")
 st.title("🇲🇲 Myanmar AI Sub Translator")
 
-# Secrets မှ API Key ကို ခေါ်ယူခြင်း
+# Secrets မှ API Key ကို စစ်ဆေး၍ ခေါ်ယူခြင်း
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 else:
-    st.error("Secrets ထဲမှာ API Key ထည့်ရန် လိုအပ်ပါသည်။")
+    st.error("Secrets ထဲမှာ GEMINI_API_KEY ထည့်သွင်းရန် လိုအပ်ပါသည်။")
     st.stop()
 
 uploaded_file = st.file_uploader("SRT ဖိုင် တင်ပေးပါ", type=["srt"])
 
 if uploaded_file:
-    # ဖိုင်နာမည်ကို (Burmese).srt ဟု ပြောင်းလဲသတ်မှတ်ခြင်း
+    # ဖိုင်နာမည်ကို (Burmese).srt ဟု ပြောင်းလဲပေးခြင်း
     original_name = uploaded_file.name
     new_filename = original_name.replace(".srt", " (Burmese).srt")
     
@@ -35,7 +35,7 @@ if uploaded_file:
             batch = subs[i:i + batch_size]
             original_texts = "\n".join([f"{j+1}. {s.text}" for j, s in enumerate(batch)])
             
-            prompt = f"Translate these movie subtitles to natural Burmese. Return ONLY the translated lines:\n{original_texts}"
+            prompt = f"Translate these to natural Burmese. Return ONLY Burmese lines:\n{original_texts}"
             
             try:
                 response = model.generate_content(prompt)
@@ -46,12 +46,12 @@ if uploaded_file:
                         clean_text = line.split('. ', 1)[-1] if '. ' in line else line
                         batch[j].text = clean_text
                 
-                # Quota limit မမိစေရန် ၃ စက္ကန့်စီ နားခြင်း
-                time.sleep(3) 
+                # Quota limits မမိစေရန် ၅ စက္ကန့်စီ နားပေးခြင်း
+                time.sleep(5) 
                 
             except Exception as e:
-                # Quota ပြည့်သွားပါက ၁ မိနစ် စောင့်ဆိုင်းခြင်း
-                status_text.text("Quota ပြည့်သွားသဖြင့် ၁ မိနစ် ခေတ္တနားနေပါသည်။ မပိတ်လိုက်ပါနဲ့...")
+                # Quota ပြည့်ပါက ၁ မိနစ် စောင့်ဆိုင်းခြင်း
+                status_text.text("Quota ပြည့်သွားသဖြင့် ၁ မိနစ် ခဏနားနေပါသည်။ မပိတ်လိုက်ပါနဲ့...")
                 time.sleep(60)
             
             progress = min((i + batch_size) / len(subs), 1.0)
@@ -60,7 +60,7 @@ if uploaded_file:
 
         st.success("ဘာသာပြန်ခြင်း ပြီးဆုံးပါပြီ!")
         
-        # SRT Format ပြန်လည်ဖွဲ့စည်းခြင်း
+        # AttributeError မဖြစ်အောင် SRT data ကို manual တည်ဆောက်ခြင်း
         final_srt = ""
         for s in subs:
             final_srt += f"{s.index}\n{s.start} --> {s.end}\n{s.text}\n\n"
@@ -70,5 +70,5 @@ if uploaded_file:
             data=final_srt,
             file_name=new_filename,
             mime="text/plain"
-                    )
-            
+        )
+        
